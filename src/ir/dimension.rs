@@ -29,7 +29,7 @@ pub struct Dimension<'a> {
 impl<'a> Dimension<'a> {
     /// Creates a new dimension.
     pub fn new(size: ir::Size, id: Id) -> Dimension {
-        assert_ne!(size.as_int(), Some(1));
+        assert!(size.universe().map(|u| !u.contains(&1)).unwrap_or(true));
         Dimension {
             size, id,
             iterated: Vec::new(),
