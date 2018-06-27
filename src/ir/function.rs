@@ -39,6 +39,7 @@ pub struct Function<'a> {
     mem_blocks: mem::BlockMap,
     layouts_to_lower: Vec<ir::mem::InternalId>,
     induction_vars: Vec<ir::InductionVar<'a>>,
+    logical_dims: Vec<dim::LogicalDim>,
 }
 
 impl<'a> Function<'a> {
@@ -55,6 +56,7 @@ impl<'a> Function<'a> {
             mem_blocks,
             layouts_to_lower: Vec::new(),
             induction_vars: Vec::new(),
+            logical_dims: Vec::new(),
         }
     }
 
@@ -296,6 +298,16 @@ impl<'a> Function<'a> {
 
     /// Returns the list of layouts to lower.
     pub fn layouts_to_lower(&self) -> &[ir::mem::InternalId] { &self.layouts_to_lower }
+
+    /// Returns the list of logical dimensions.
+    pub fn logical_dimensions(&self) -> impl Iterator<Item=&dim::LogicalDim> + '_ {
+        self.logical_dims.iter()
+    }
+
+    /// Returns a logical dimension given its identifier.
+    pub fn logical_dimension(&self, id: dim::LogicalId) -> &dim::LogicalDim {
+        &self.logical_dims[id.0 as usize]
+    }
 }
 
 impl<'a> std::ops::Deref for Function<'a> {
