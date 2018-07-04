@@ -4,7 +4,7 @@ use telamon::codegen;
 use telamon::device::{ArgMap, ScalarArgument, Device};
 use telamon::device::cuda::{Gpu, Context, Kernel, PerfCounterSet};
 use telamon::explorer;
-use telamon::helper::{AutoOperand, Builder, DimGroup, Reduce};
+use telamon::helper::{AutoOperand, Builder, Reduce};
 use telamon::ir;
 use telamon::ir::Signature;
 use telamon::search_space::{Action, DimKind, InstFlag, SearchSpace, ThreadMapping, Order};
@@ -119,8 +119,8 @@ pub fn init_stride_array<'a>(signature: &'a Signature, device: &'a Device,
     let (dim, addr) = if n > 1 {
         let dim = builder.open_dim_ex(size, DimKind::LOOP);
         let addr = builder.mad(&dim, &byte_stride, &array);
-        (DimGroup::new(vec![dim]), addr)
-    } else { (DimGroup::default(), builder.mov(&array)) };
+        (vec![dim], addr)
+    } else { (vec![], builder.mov(&array)) };
     let next_addr = builder.mad(&byte_stride, &1i32, &addr);
     let pattern0 = builder.unknown_access_pattern(mem_id);
     builder.st_ex(&addr, &next_addr, true, pattern0, InstFlag::MEM_CG);
@@ -234,7 +234,7 @@ pub fn parallel_load<'a>(signature: &'a Signature, gpu: &'a Gpu, num_blocks: &st
     let val = builder.ld_ex(ir::Type::F(32), &addr, pattern, InstFlag::MEM_CG);
     let d4_1 = builder.open_mapped_dim(&d4_0)[0];
     let acc = builder.add(&val, &Reduce(init));
-    builder.close_dim(&DimGroup::new(vec![d0, d3, d4_1]));
+    builder.close_dim(&[d0, d3, d4_1]);
     // Write the result
     let d1_2 = builder.open_mapped_dim(&d1_1);
     for (x, y) in d1_2.iter().tuple_windows() { builder.order(&x, &y, Order::OUTER); }
@@ -285,7 +285,7 @@ pub fn parallel_store<'a>(signature: &'a Signature, gpu: &'a Gpu, num_blocks: &s
     };
     let addr = builder.induction_var(&array, strides);
     builder.st_ex(&addr, &42f32, true, pattern, InstFlag::MEM_CG);
-    builder.close_dim(&DimGroup::new(vec![d0, d3, d4]));
+    builder.close_dim(&[d0, d3, d4]);
 
     builder.order(&d0, &d1, Order::OUTER);
     builder.order(&d1, &d3, Order::OUTER);
@@ -334,7 +334,7 @@ pub fn chain_in_syncthread<'a>(signature: &'a Signature, device: &'a Device, n_i
     let d3 = builder.open_mapped_dim(&d0)[0];
     let d4 = builder.open_dim_ex(add_unroll_size, DimKind::UNROLL);
     let acc = builder.add(&Reduce(init), &2f32);
-    builder.close_dim(&DimGroup::new(vec![d1, d2, d3, d4]));
+    builder.close_dim(&[d1, d2, d3, d4]);
 
     let d5 = builder.open_mapped_dim(&d0)[0];
     let pattern = builder.unknown_access_pattern(out_id);
