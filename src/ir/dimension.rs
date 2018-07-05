@@ -30,10 +30,10 @@ pub struct Dimension<'a> {
 impl<'a> Dimension<'a> {
     /// Creates a new dimension.
     pub fn new(size: ir::Size, id: Id, logical_dim: Option<LogicalId>) -> Dimension {
-        let possible_sizes = if let Some(s) = size.as_fixed() {
+        let (size, possible_sizes) = if let Some(s) = size.as_fixed() {
             assert!(s != 1);
-            vec![s]
-        } else { vec![] };
+            (ir::Size::new_dim(id), vec![s])
+        } else { (size, vec![]) };
         Dimension {
             size, id, logical_dim, possible_sizes,
             iterated: Vec::new(),
