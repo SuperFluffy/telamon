@@ -472,8 +472,7 @@ end
 
 // Limit the size of logical dimensions.
 require forall $dim in LogicalDimensions:
-  logical_dim_size($dim) ==
-    "Range { min: $dim.min_static_size(), max: $dim.max_static_size() }"
+  logical_dim_size($dim) == "$dim.possible_tilings()"
 
 // Ensure merged dimensions have the same tiling factor.
 require forall $lhs in Dimensions:

@@ -101,17 +101,26 @@ pub struct LogicalDim {
     id: LogicalId,
     static_dims: Vec<Id>,
     nonstatic_dim: Option<Id>,
-    max_size: u32,
+    tilings: Vec<u32>,
 }
 
 impl LogicalDim {
-    /// Creates a new logical dimension.
-    pub fn new(id: LogicalId,
-               static_dims: Vec<Id>,
-               nonstatic_dim: Option<Id>,
-               max_size: u32) -> Self {
-        LogicalDim { id, static_dims, nonstatic_dim, max_size }
+    /// Creates a new logical dimension, composed only of static dimensions.
+    pub fn new_static(id: LogicalId,
+                      static_dims: Vec<Id>,
+                      total_size: u32) -> Self {
+        LogicalDim { id, static_dims, nonstatic_dim: None, tilings: vec![total_size] }
     }
+
+    /// Creates a new logical dimension, composed of static dimensions and one
+    /// dynamically-sized dimension.
+    pub fn new_dynamic(id: LogicalId,
+                       dynamic_dim: Id,
+                       static_dims: Vec<Id>,
+                       tilings: Vec<u32>) -> Self {
+        LogicalDim { id, static_dims, nonstatic_dim: Some(dynamic_dim), tilings }
+    }
+
 
     /// Returns a unique identifier for the logic dimension.
     pub fn id(&self) -> LogicalId { self.id }
@@ -123,13 +132,8 @@ impl LogicalDim {
 
     pub fn nonstatic_dim(&self) -> Option<ir::dim::Id> { self.nonstatic_dim }
 
-    /// Returns the maximum size of combined static dimensions.
-    pub fn max_static_size(&self) -> u32 { self.max_size }
-
-    /// Returns the minimum size of combined static dimensions.
-    pub fn min_static_size(&self) -> u32 {
-        if self.nonstatic_dim.is_some() { 1 } else { self.max_size }
-    }
+    /// Returns the possible tiling factors.
+    pub fn possible_tilings(&self) -> &[u32] { &self.tilings }
 }
 
 hash_from_key!(LogicalDim, &LogicalDim::id);

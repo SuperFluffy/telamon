@@ -384,7 +384,7 @@ fn open_mapped_tiled_dim() {
     let signature = empty_signature(0);
 
     let mut builder = helper::Builder::new(&signature, context.device());
-    let ldim0 = builder.open_tiled_dim(ir::Size::new_const(32), &[4]);
+    let ldim0 = builder.open_tiled_dim(ir::Size::new_const(32), vec![4], 1);
     builder.mov(&0f32);
     let ldim1 = builder.open_mapped_dim(&ldim0);
     builder.mov(&0f32);
@@ -393,7 +393,7 @@ fn open_mapped_tiled_dim() {
     builder.action(Action::DimKind(ldim0[1], DimKind::UNROLL));
     builder.action(Action::DimKind(ldim1[0], DimKind::UNROLL));
     builder.action(Action::DimKind(ldim1[1], DimKind::UNROLL));*/
-    
+
     let space = builder.get();
     let fun = space.ir_instance();
     assert_eq!(unwrap!(fun.dim(ldim0[0]).possible_sizes()), &[8]);

@@ -223,13 +223,16 @@ impl<'a> Builder<'a> {
     }
 
     /// Open multiple dimensions to represent a tiled dimension.
-    pub fn open_tiled_dim(&mut self, size: Size<'a>, tiling: &[u32]) -> LogicalDim<'a> {
-        if tiling.is_empty() {
+    pub fn open_tiled_dim(&mut self, size: Size<'a>,
+                          tiling_factors: Vec<u32>,
+                          num_tile_dims: usize) -> LogicalDim<'a> {
+        if num_tile_dims == 0 {
             LogicalDim::Simple(self.open_dim(size))
         } else {
-            let (id, dims) = self.function.add_logical_dim(size.clone(), tiling);
+            let (id, dims) = self.function.add_logical_dim(
+                size.clone(), tiling_factors.clone(), num_tile_dims);
             self.open_dims.extend(dims.iter().map(|&id| (id, id)));
-            LogicalDim::Composite(id, dims, size, tiling.iter().cloned().collect())
+            LogicalDim::Composite { id, dims, size, tiling_factors }
         }
     }
 
@@ -253,14 +256,19 @@ impl<'a> Builder<'a> {
                 self.open_dims.insert(new_id, *old_id);
                 LogicalDim::Simple(new_id)
             },
-            LogicalDim::Composite(_, old_dims, size, tile_sizes) => {
-                let (new_id, new_dims) =
-                    self.function.add_logical_dim(size.clone(), tile_sizes);
+            LogicalDim::Composite { dims: old_dims, size, tiling_factors, .. } => {
+                let (new_id, new_dims) = self.function.add_logical_dim(
+                    size.clone(), tiling_factors.clone(), old_dims.len() - 1);
                 for (&old, &new) in old_dims.iter().zip_eq(&new_dims) {
                     self.open_dims.remove(&old);
                     self.open_dims.insert(new, old);
                 }
-                LogicalDim::Composite(new_id, new_dims, size.clone(), tile_sizes.clone())
+                LogicalDim::Composite {
+                    id: new_id,
+                    dims: new_dims,
+                    size: size.clone(),
+                    tiling_factors: tiling_factors.clone(),
+                }
             },
         }
     }

@@ -133,14 +133,15 @@ impl<'a, S> Tensor<'a, S> where S: ScalarArgument {
     }
 
     /// Creates a `VirtualTensor` that contains the values of `self`, loaded in registers.
-    pub fn load<'b>(&self, tiling: &[&[u32]], builder: &mut Builder<'b>)
+    pub fn load<'b>(&self, tiling: Vec<(Vec<u32>, usize)>, builder: &mut Builder<'b>)
         -> VirtualTensor<'b>
     {
         let mut dims = Vec::new();
         let mut induction_levels = Vec::new();
-        for (&(ref size, ref stride), tiling) in self.iter_dims.iter().zip_eq(tiling) {
+        let iter_dims = self.iter_dims.iter().map(|(x, y)| (x, y)).zip_eq(tiling);
+        for ((size, stride), (tiling_factors, num_tile_dims)) in iter_dims {
             let size = size.into_ir_size(builder);
-            let dim = builder.open_tiled_dim(size, tiling);
+            let dim = builder.open_tiled_dim(size, tiling_factors, num_tile_dims);
             let mut stride = stride.into_ir_size(builder);
             for d in dim.ids().rev() {
                 induction_levels.push((d, stride.clone()));

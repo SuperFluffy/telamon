@@ -89,32 +89,29 @@ impl<'a> Function<'a> {
     }
 
     /// Creates a logical dimension and the concret dimensions that composes it.
-    // TODO(search_space): allow multiple sizes for each tilied dimension:
-    // - use the same tiling factors everywhere: tiling_factors: VecSet<u32>
-    // - give a number of tiles: num_tiles: usize
-    pub fn add_logical_dim(&mut self, mut size: ir::Size<'a>, tile_sizes: &[u32])
-        -> (dim::LogicalId, Vec<dim::Id>)
-    {
+    pub fn add_logical_dim(&mut self, mut size: ir::Size<'a>,
+                           tiling_factors: Vec<u32>,
+                           num_tile_dims: usize) -> (dim::LogicalId, Vec<dim::Id>) {
         let logical_id = dim::LogicalId(self.logical_dims.len() as u32);
-        let tiling = tile_sizes.iter().product();
-        let dim_ids = (0..tile_sizes.len()+1)
+        let dim_ids = (0..num_tile_dims+1)
             .map(|id| dim::Id((id+self.dims.len()) as u32))
             .collect_vec();
-        let (tile_dims, base, max_tiling) = if let Some(size) = size.as_fixed() {
-            let sizes = std::iter::once(size/tiling).chain(tile_sizes.iter().cloned());
-            self.dims.extend(dim_ids.iter().zip_eq(sizes).map(|(&id, size)| {
-                Dimension::with_multi_sizes(id, vec![size], Some(logical_id))
-            }));
-            (dim_ids.clone(), None, size)
+        let logical_dim = if let Some(size) = size.as_fixed() {
+            let sizes = tiling_factors.iter().map(|&t| size/t).collect();
+            let base = Dimension::with_multi_sizes(dim_ids[0], sizes, Some(logical_id));
+            self.dims.push(base);
+            dim::LogicalDim::new_static(logical_id, dim_ids.clone(), size)
         } else {
             size.tile(&dim_ids[1..].iter().cloned().collect());
             self.dims.push(Dimension::new(size, dim_ids[0], Some(logical_id)));
-            self.dims.extend(dim_ids[1..].iter().zip_eq(tile_sizes).map(|(&id, &size)| {
-                Dimension::with_multi_sizes(id, vec![size], Some(logical_id))
-            }));
-            (dim_ids[1..].iter().cloned().collect(), Some(dim_ids[0]), tiling)
+            let static_dims = dim_ids[1..].iter().cloned().collect();
+            let factors = tiling_factors.clone();
+            dim::LogicalDim::new_dynamic(logical_id, dim_ids[0], static_dims, factors)
         };
-        let logical_dim = dim::LogicalDim::new(logical_id, tile_dims, base, max_tiling);
+        for &id in &dim_ids[1..] {
+            let factors = tiling_factors.clone();
+            self.dims.push(Dimension::with_multi_sizes(id, factors, Some(logical_id)));
+        }
         self.logical_dims.push(logical_dim);
         (logical_id, dim_ids)
     }

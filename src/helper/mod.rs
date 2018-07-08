@@ -36,7 +36,12 @@ pub enum LogicalDim<'a> {
     /// A single concrete dimension.
     Simple(ir::dim::Id),
     /// Multiple dimensions forming a single logical once.
-    Composite(ir::dim::LogicalId, Vec<ir::dim::Id>, ir::Size<'a>, Vec<u32>),
+    Composite {
+        id: ir::dim::LogicalId,
+        dims: Vec<ir::dim::Id>,
+        size: ir::Size<'a>,
+        tiling_factors: Vec<u32>,
+    },
 }
 
 impl<'b> LogicalDim<'b> {
@@ -62,7 +67,7 @@ impl<'a> std::ops::Index<usize> for LogicalDim<'a> {
         match self {
             LogicalDim::Simple(id) if index == 0 => id,
             LogicalDim::Simple(_) => panic!("out of bounds index {}", index),
-            LogicalDim::Composite(_, dims, _, _) => &dims[index],
+            LogicalDim::Composite { dims, .. } => &dims[index],
 
         }
     }
@@ -75,7 +80,7 @@ impl<'a> IntoIterator for &'a LogicalDim<'a> {
     fn into_iter(self) -> Self::IntoIter {
         match self {
             LogicalDim::Simple(dim) => Box::new(std::iter::once(*dim)),
-            LogicalDim::Composite(_, dims, _, _) => Box::new(dims.iter().cloned()),
+            LogicalDim::Composite { dims, .. } => Box::new(dims.iter().cloned()),
         }
     }
 }
