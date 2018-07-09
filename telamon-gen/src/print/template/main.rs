@@ -332,9 +332,9 @@ pub struct NumericSet {
 
 #[allow(dead_code)]
 impl NumericSet {
-    const MAX_LEN: usize = 16;
+    pub const MAX_LEN: usize = 16;
 
-    const FAILED: Self = NumericSet { len: 0, values: [0; NumericSet::MAX_LEN] };
+    pub const FAILED: Self = NumericSet { len: 0, values: [0; NumericSet::MAX_LEN] };
 
     /// Creates a new `NumericSet` containing a single value.
     pub fn new_fixed(val: u32) -> Self {
