@@ -47,7 +47,6 @@ impl<'a> Candidate<'a> {
         debug!("applying action {:?}", action);
         let mut space = self.space.clone();
         match action {
-            ActionEx::TileSizes(..) => panic!(),
             ActionEx::Action(action) => space.apply_decisions(vec![action]),
             ActionEx::LowerLayout { mem, ref st_dims, ref ld_dims } =>
                 space.lower_layout(mem, st_dims.clone(), ld_dims.clone()),
