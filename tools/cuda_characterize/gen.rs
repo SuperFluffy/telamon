@@ -206,8 +206,11 @@ pub fn parallel_load<'a>(signature: &'a Signature, gpu: &'a Gpu, num_blocks: &st
     let _ = builder.open_dim_ex(block_size, DimKind::BLOCK);
     // Initialize the result
     let init_size = builder.cst_size(num_wraps * gpu.wrap_size);
-    let thread_tilling = if num_wraps == 1 { vec![] } else { vec![gpu.wrap_size] };
-    let d1_0 = builder.open_tiled_dim(init_size, &thread_tilling);
+    let d1_0 = if num_wraps == 1 {
+        builder.open_tiled_dim(init_size, vec![], 0)
+    } else {
+        builder.open_tiled_dim(init_size, vec![gpu.wrap_size], 1)
+    };
     for d in &d1_0 { builder.action(Action::DimKind(d, DimKind::THREAD)); }
     for (x, y) in d1_0.iter().tuple_windows() { builder.order(&x, &y, Order::OUTER); }
     let init = builder.mov(&0f32);
@@ -263,9 +266,12 @@ pub fn parallel_store<'a>(signature: &'a Signature, gpu: &'a Gpu, num_blocks: &s
     let loop_size = builder.param_size(n);
     let d0 = builder.open_dim_ex(loop_size, DimKind::LOOP);
 
-    let thread_tilling = if num_wraps == 1 { vec![] } else { vec![gpu.wrap_size] };
     let thread_size = builder.cst_size(num_wraps * gpu.wrap_size);
-    let d1 = builder.open_tiled_dim(thread_size, &thread_tilling);
+    let d1 = if num_wraps == 1 {
+        builder.open_tiled_dim(thread_size, vec![], 0)
+    } else {
+        builder.open_tiled_dim(thread_size, vec![gpu.wrap_size], 1)
+    };
     for d in &d1 { builder.action(Action::DimKind(d, DimKind::THREAD)); }
     for (x, y) in d1.iter().tuple_windows() { builder.order(&x, &y, Order::OUTER); }
 

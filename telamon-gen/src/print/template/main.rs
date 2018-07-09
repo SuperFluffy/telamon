@@ -336,6 +336,13 @@ impl NumericSet {
 
     const FAILED: Self = NumericSet { len: 0, values: [0; NumericSet::MAX_LEN] };
 
+    /// Creates a new `NumericSet` containing a single value.
+    pub fn new_fixed(val: u32) -> Self {
+        let mut values = [0; Self::MAX_LEN];
+        values[0] = val;
+        NumericSet { values, len: 1 }
+    }
+
     /// Returns the set containing all the possibilities. Assumes the universe is sorted.
     pub fn all(univers: &[u32]) -> Self {
         assert!(univers.len() <= NumericSet::MAX_LEN);
@@ -384,6 +391,11 @@ impl NumericSet {
     /// Returns the only value in the set, if it is fully constrained.
     pub fn as_constrained(&self) -> Option<u32> {
         if self.len == 1 { Some(self.values[0]) } else { None }
+    }
+
+    /// Lists the possible values the domain can take.
+    pub fn list<'a>(&'a self) -> Vec<Self> {
+        self.values[0..self.len].iter().cloned().map(Self::new_fixed).collect()
     }
 
     fn restrict_to(&mut self, other: &[u32]) {

@@ -60,7 +60,7 @@ fn partial_bound_0() {
 fn partial_bound_1() {
     let _ = env_logger::try_init();
     let executor = cuda::Executor::init();
-    let mut context = cuda::Context::new(&executor); 
+    let mut context = cuda::Context::new(&executor);
     let z;
     let signature = {
         let mut builder = SignatureBuilder::new("test", &mut context);
@@ -104,7 +104,7 @@ fn partial_bound_1() {
 fn partial_bound_2() {
     let _ = env_logger::try_init();
     let executor = cuda::Executor::init();
-    let mut context = cuda::Context::new(&executor); 
+    let mut context = cuda::Context::new(&executor);
 
     let (x, y, a);
     let signature = {
@@ -119,11 +119,9 @@ fn partial_bound_2() {
         builder.get()
     };
 
-    let m_tiling = &[2];
-
     let mut builder = Builder::new(&signature, context.device());
-    let ld_x = x.load(&[&[]], &mut builder);
-    let ld_a = a.load(&[m_tiling, &[]], &mut builder);
+    let ld_x = x.load(vec![(vec![], 0)], &mut builder);
+    let ld_a = a.load(vec![(vec![2], 1), (vec![], 0)], &mut builder);
 
     let init_dim_m = builder.open_mapped_dim(&ld_a[0]);
     let init = builder.mov(&0f32);
@@ -164,7 +162,7 @@ fn partial_bound_2() {
 fn partial_bound_3() {
     let _ = env_logger::try_init();
     let executor = cuda::Executor::init();
-    let mut context = cuda::Context::new(&executor); 
+    let mut context = cuda::Context::new(&executor);
 
     let a;
     let signature = {
@@ -176,7 +174,7 @@ fn partial_bound_3() {
     let mut builder = Builder::new(&signature, context.device());
 
     let size_m = builder.cst_size(256);
-    let ld_a_dim = builder.open_tiled_dim(size_m, &[4]);
+    let ld_a_dim = builder.open_tiled_dim(size_m, vec![4], 1);
     let (addr, patt) = builder.tensor_access(&"a", a, &ir::Type::F(32), &[&ld_a_dim]);
     builder.ld(ir::Type::F(32), &addr, patt);
     builder.close_dim(&ld_a_dim);
@@ -222,7 +220,7 @@ fn partial_bound_3() {
 fn partial_bound_4() {
     let _ = env_logger::try_init();
     let executor = cuda::Executor::init();
-    let mut context = cuda::Context::new(&executor); 
+    let mut context = cuda::Context::new(&executor);
 
     let a: tensor::Tensor<f32>;
     let signature = {
@@ -232,7 +230,7 @@ fn partial_bound_4() {
     };
 
     let mut builder = Builder::new(&signature, context.device());
-    let ld_a = a.load(&[&[], &[], &[]], &mut builder);
+    let ld_a = a.load(vec![(vec![], 0), (vec![], 0), (vec![], 0)], &mut builder);
 
     builder.action(Action::DimKind(ld_a[0][0], DimKind::THREAD));
     builder.action(Action::DimKind(ld_a[1][0], DimKind::THREAD));
@@ -265,7 +263,7 @@ fn partial_bound_4() {
 fn partial_bound_5() {
     let _ = env_logger::try_init();
     let executor = cuda::Executor::init();
-    let mut context = cuda::Context::new(&executor); 
+    let mut context = cuda::Context::new(&executor);
 
     let (signature, a) = {
         let mut builder = SignatureBuilder::new("test", &mut context);
@@ -276,7 +274,7 @@ fn partial_bound_5() {
 
     let mut builder = Builder::new(&signature, context.device());
 
-    let ld_a = a.load(&[&[]], &mut builder);
+    let ld_a = a.load(vec![(vec![], 0)], &mut builder);
     let dim1 = builder.open_dim_ex(ir::Size::new_const(26), DimKind::THREAD);
     let _ = builder.mov(&0f32);
 
@@ -319,11 +317,14 @@ fn final_bound_0() {
         builder.get()
     };
 
-    let tiling = &[1024, 4];
     let mut builder = Builder::new(&signature, context.device());
 
-    let ld_x = x.load(&[tiling], &mut builder);
-    let ld_y = y.load(&[tiling], &mut builder);
+    let ld_x = x.load(vec![(vec![1024, 4], 2)], &mut builder);
+    let ld_y = y.load(vec![(vec![1024, 4], 2)], &mut builder);
+    builder.action(Action::Size(ld_x[0][1], NumericSet::new_fixed(1024)));
+    builder.action(Action::Size(ld_y[0][1], NumericSet::new_fixed(1024)));
+    builder.action(Action::Size(ld_x[0][2], NumericSet::new_fixed(4)));
+    builder.action(Action::Size(ld_y[0][2], NumericSet::new_fixed(4)));
     let mad_dim = builder.open_mapped_dim(&ld_x[0]);
     let x_op = ld_x.dim_map(&[&mad_dim], ir::DimMapScope::Global, &mut builder);
     let y_op = ld_y.dim_map(&[&mad_dim], ir::DimMapScope::Global, &mut builder);
