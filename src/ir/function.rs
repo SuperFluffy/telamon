@@ -116,6 +116,12 @@ impl<'a> Function<'a> {
         (logical_id, dim_ids)
     }
 
+    /// Set two dimensions as mapped.
+    pub fn set_dims_mapped(&mut self, lhs: ir::dim::Id, rhs: ir::dim::Id) {
+        self.dim_mut(lhs).add_mapped_dim(rhs);
+        self.dim_mut(rhs).add_mapped_dim(lhs);
+    }
+
     /// Allocates a new memory block.
     pub fn add_mem_block(&mut self, size: u32, private: bool) -> mem::InternalId {
         self.mem_blocks.alloc_block(size, private, None)
@@ -301,7 +307,7 @@ impl<'a> Function<'a> {
         let mem = self.mem_blocks.new_tmp(data_type, dims.iter().cloned());
         // Build the store.
         let st_operand =  Operand::new_inst(
-            self.inst(src_inst), st_dim_map, ir::DimMapScope::Local);
+            self.inst(src_inst), st_dim_map, ir::DimMapScope::Local, self);
         let st_dim_set = st_dims.iter().cloned().collect();
         let store = self.add_inst(Operator::TmpSt(st_operand, mem.into()), st_dim_set);
         // Build the load
@@ -329,7 +335,10 @@ impl<'a> Function<'a> {
                 .map(|universe| universe.iter().cloned().collect())
                 .map(|universe| {
                     let id = ir::dim::Id(self.dims.len() as u32);
-                    self.dims.push(Dimension::with_multi_sizes(id, universe, None));
+                    let mut dim = Dimension::with_multi_sizes(id, universe, None);
+                    dim.add_mapped_dim(old_dim);
+                    self.dim_mut(old_dim).add_mapped_dim(id);
+                    self.dims.push(dim);
                     dim_map.push(if from { (id, old_dim) } else { (old_dim, id) });
                     id
                 }).unwrap_or(old_dim)

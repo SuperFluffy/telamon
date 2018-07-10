@@ -1,6 +1,7 @@
 //! Represents iteration dimensions.
 use ir::{self, BasicBlock};
 use std::fmt;
+use utils::*;
 
 /// Provides a unique identifier for iteration dimensions.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -25,6 +26,7 @@ pub struct Dimension<'a> {
     iterated: Vec<ir::InstId>,
     is_thread_dim: bool,
     logical_dim: Option<LogicalId>,
+    mapped_dims: VecSet<ir::dim::Id>,
 }
 
 impl<'a> Dimension<'a> {
@@ -38,6 +40,7 @@ impl<'a> Dimension<'a> {
             size, id, logical_dim, possible_sizes,
             iterated: Vec::new(),
             is_thread_dim: false,
+            mapped_dims: VecSet::default(),
         }
     }
 
@@ -51,6 +54,7 @@ impl<'a> Dimension<'a> {
             size: ir::Size::new_dim(id),
             iterated: Vec::new(),
             is_thread_dim: false,
+            mapped_dims: VecSet::default(),
         }
     }
 
@@ -81,6 +85,21 @@ impl<'a> Dimension<'a> {
 
     /// Returns the logical dimension this real dimension is part of, if any.
     pub fn logical_dim(&self) -> Option<LogicalId> { self.logical_dim }
+
+    /// Returns the list of dimensions mapped to this one.
+    pub fn mapped_dims<'b>(&'b self) -> impl Iterator<Item=Id> + 'b {
+        self.mapped_dims.iter().cloned()
+    }
+
+    /// Indicates if a dimension is mapped to this one.
+    pub fn is_mapped_dim(&self, other: ir::dim::Id) -> bool {
+        self.mapped_dims.contains(&other)
+    }
+
+    /// Set a dimension as mapped to this one.
+    pub fn add_mapped_dim(&mut self, other: ir::dim::Id) {
+        self.mapped_dims.insert(other);
+    }
 }
 
 impl<'a> BasicBlock<'a> for Dimension<'a> {

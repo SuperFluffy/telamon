@@ -481,3 +481,29 @@ require forall $lhs in Dimensions:
       forall $rhs_logical in TilingDims($rhs):
         order($lhs, $rhs) is not MERGED ||
           logical_dim_size($lhs_logical) == logical_dim_size($rhs_logical)
+
+/// Lists the dimensions mapped to a given dimension.
+///
+/// We only need to list static dimensions as mapped non-static dimension will have the
+/// same tiling factor due to the static dimensions having the same size.
+// TODO(cleanup): find a nicer encoding, that also account for non-static dims
+set MappedDims($dim in StaticDims) subsetof StaticDims:
+  item_type = "ir::Dimension"
+  id_type = "ir::dim::Id"
+  item_getter = "$fun.dim($id)"
+  id_getter = "$item.id()"
+  iterator = "$dim.mapped_dims().map(|d| $fun.dim(d))"
+  from_superset = "$dim.is_mapped_dim($item.id())"
+  reverse forall $dim in StaticDims = "$dim.mapped_dims().map(|d| $fun.dim(d))"
+  new_objs = "$objs.mapped_dims"
+  var_prefix = "mapped_dim"
+end
+
+// FIXME: add mapped dims to new_objs when lowering
+// * need maped dims in:
+//   - open_mapped_dims
+// * assert dims are mapped in operator
+
+require forall $lhs in StaticDims:
+  forall $rhs in MappedDims($lhs):
+    size($lhs) == size($rhs)

@@ -52,20 +52,34 @@ impl<'a> Operand<'a> {
     }
 
     /// Create an operand from an instruction.
-    pub fn new_inst(inst: &Instruction, dim_map: DimMap, mut scope: DimMapScope)
+    pub fn new_inst(inst: &Instruction,
+                    dim_map: DimMap,
+                    mut scope: DimMapScope,
+                    function: &ir::Function)
             -> Operand<'a> {
         // A temporary arry can only be generated if the type size is known.
         assert_ne!(inst.t(), Type::Void);
         if scope == DimMapScope::Global && inst.t().len_byte().is_none() {
             scope = DimMapScope::Thread
         }
+        for &(lhs, rhs) in &dim_map {
+            assert!(function.dim(lhs).is_mapped_dim(rhs));
+            assert!(function.dim(rhs).is_mapped_dim(lhs));
+        }
         Inst(inst.id(), inst.t(), dim_map, scope)
     }
 
     /// Creates a reduce operand from an instruction and a set of dimensions to reduce on.
-    pub fn new_reduce(init: &Instruction, dim_map: DimMap, dims: Vec<ir::dim::Id>)
+    pub fn new_reduce(init: &Instruction,
+                      dim_map: DimMap,
+                      dims: Vec<ir::dim::Id>,
+                      function: &ir::Function)
             -> Operand<'a> {
         assert_ne!(init.t(), Type::Void);
+        for &(lhs, rhs) in &dim_map {
+            assert!(function.dim(lhs).is_mapped_dim(rhs));
+            assert!(function.dim(rhs).is_mapped_dim(lhs));
+        }
         Reduce(init.id(), init.t(), dim_map, dims)
     }
 

@@ -241,7 +241,7 @@ impl<'a> Builder<'a> {
     /// The size of the new dim is inherited from the mapped dim.
     /// The dimension mapped to is closed if needed.
     pub fn open_mapped_dim(&mut self, old_dim: &LogicalDim<'a>) -> LogicalDim<'a> {
-        match old_dim {
+        let new_dim = match old_dim {
             LogicalDim::Simple(old_id) => {
                 self.open_dims.remove(old_id);
                 let size = {
@@ -270,7 +270,15 @@ impl<'a> Builder<'a> {
                     tiling_factors: tiling_factors.clone(),
                 }
             },
+        };
+        for (old, new) in
+            MetaDimension::ids(old_dim).zip_eq(MetaDimension::ids(&new_dim))
+        {
+            if self.function.dim(old).possible_sizes().is_some() {
+                self.function.set_dims_mapped(old, new);
+            }
         }
+        new_dim
     }
 
     /// Opens an existing dimension.
@@ -344,7 +352,7 @@ impl<'a> Builder<'a> {
                    scope: ir::DimMapScope) -> ir::Operand<'a> {
         let dim_map = dim_map.iter().flat_map(|&(lhs, rhs)| lhs.ids().zip_eq(rhs.ids()));
         let inst = self.function.inst(base);
-        ir::Operand::new_inst(inst, ir::DimMap::new(dim_map), scope)
+        ir::Operand::new_inst(inst, ir::DimMap::new(dim_map), scope, &self.function)
     }
 
     /// Finds a paramter given its name.

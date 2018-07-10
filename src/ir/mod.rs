@@ -60,6 +60,7 @@ pub struct NewObjs {
     pub static_dims: Vec<dim::Id>,
     pub logical_dims: Vec<dim::LogicalId>,
     pub static_dims_of: Vec<(dim::LogicalId, dim::Id)>,
+    pub mapped_dims: Vec<(dim::Id, dim::Id)>,
 }
 
 impl NewObjs {
@@ -80,6 +81,10 @@ impl NewObjs {
     pub fn add_dimension(&mut self, dim: &Dimension) {
         self.add_bb(dim);
         self.dimensions.push(dim.id());
+        for other in dim.mapped_dims() {
+            self.mapped_dims.push((dim.id(), other));
+            self.mapped_dims.push((other, dim.id()));
+        }
         if dim.is_thread_dim() { self.add_thread_dim(dim.id()); }
         if dim.possible_sizes().is_some() { self.static_dims.push(dim.id()); }
     }
