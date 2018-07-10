@@ -54,6 +54,7 @@ impl<'a, S> Kernel<'a> for Axpy<'a, S> where S: Scalar {
         let mad = VirtualTensor::new(builder.mad(&x_op, &"alpha", &y_op), vec![mad_dim]);
         mad.store(&self.z, &mut builder);
         vec![build_candidate(builder.get(), ctx)]
+
     }
 
     fn get_expected_output(&self, context: &device::Context) -> ArrayD<S> {
