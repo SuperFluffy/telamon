@@ -63,8 +63,11 @@ impl<'a> Operand<'a> {
             scope = DimMapScope::Thread
         }
         for &(lhs, rhs) in &dim_map {
-            assert!(function.dim(lhs).is_mapped_dim(rhs));
-            assert!(function.dim(rhs).is_mapped_dim(lhs));
+            let lhs_dim = function.dim(lhs);;
+            if lhs_dim.possible_sizes().is_some() {
+                assert!(lhs_dim.is_mapped_dim(rhs));
+                assert!(function.dim(rhs).is_mapped_dim(lhs));
+            }
         }
         Inst(inst.id(), inst.t(), dim_map, scope)
     }
@@ -77,8 +80,11 @@ impl<'a> Operand<'a> {
             -> Operand<'a> {
         assert_ne!(init.t(), Type::Void);
         for &(lhs, rhs) in &dim_map {
-            assert!(function.dim(lhs).is_mapped_dim(rhs));
-            assert!(function.dim(rhs).is_mapped_dim(lhs));
+            let lhs_dim = function.dim(lhs);;
+            if lhs_dim.possible_sizes().is_some() {
+                assert!(lhs_dim.is_mapped_dim(rhs));
+                assert!(function.dim(rhs).is_mapped_dim(lhs));
+            }
         }
         Reduce(init.id(), init.t(), dim_map, dims)
     }

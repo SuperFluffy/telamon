@@ -181,6 +181,17 @@ impl<'a> Builder<'a> {
         }
     }
 
+    /// Register that two dimensions are mapped.
+    pub fn map_dims(&mut self, lhs: &MetaDimension, rhs: &MetaDimension) {
+        for (lhs, rhs) in lhs.ids().zip_eq(rhs.ids()) {
+            let should_map = {
+                let lhs_dim = self.function.dim(lhs);
+                lhs_dim.possible_sizes().is_some() && !lhs_dim.is_mapped_dim(rhs)
+            };
+            if should_map { self.function.set_dims_mapped(lhs, rhs); }
+        }
+    }
+
     /// Inserts an instruction in the function.
     fn inst(&mut self, op: Operator<'a>) -> InstId {
         self.function.add_inst(op, self.open_dims.iter().map(|(&x, _)| x).collect())
@@ -326,8 +337,8 @@ impl<'a> Builder<'a> {
     }
 
     /// Generates the access pattern corresponding to accessing a tensor of the given
-    /// type. The data is assumed to be laid out contiguously in the order given by dimensions.
-    /// The last dimension is the major order.
+    /// type. The data is assumed to be laid out contiguously in the order given by
+    /// dimensions. The last dimension is the major order.
     pub fn tensor_access_pattern(&self, mem: mem::Id, t: &Type, dims: &[&MetaDimension])
             -> AccessPattern<'a> {
         let data_size = self.cst_size(unwrap!(t.len_byte()));
@@ -347,12 +358,15 @@ impl<'a> Builder<'a> {
     }
 
     /// Creates a dim-map operand.
-    pub fn dim_map(&self, base: ir::InstId,
+    pub fn dim_map(&mut self, base: ir::InstId,
                    dim_map: &[(&MetaDimension, &MetaDimension)],
                    scope: ir::DimMapScope) -> ir::Operand<'a> {
-        let dim_map = dim_map.iter().flat_map(|&(lhs, rhs)| lhs.ids().zip_eq(rhs.ids()));
+        let dim_map = ir::DimMap::new(dim_map.iter().flat_map(|&(lhs, rhs)| {
+            self.map_dims(lhs, rhs);
+            lhs.ids().zip_eq(rhs.ids())
+        }));
         let inst = self.function.inst(base);
-        ir::Operand::new_inst(inst, ir::DimMap::new(dim_map), scope, &self.function)
+        ir::Operand::new_inst(inst, dim_map, scope, &self.function)
     }
 
     /// Finds a paramter given its name.
