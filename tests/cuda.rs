@@ -439,7 +439,7 @@ fn test1() {
 
     let mut builder = helper::Builder::new(&signature, context.device());
 
-    let ld_x = x.load(&[&[]], &mut builder);
+    let ld_x = x.load(vec![(vec![], 0)], &mut builder);
     let ld_a_n = builder.open_dim_ex(ir::Size::new_const(2), DimKind::UNROLL);
     let ld_a = builder.mov(&0f32);
 
