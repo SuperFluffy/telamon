@@ -6,6 +6,8 @@ mod gpu;
 mod mem_model;
 mod printer;
 
+pub mod characterize;
+
 pub use self::api::{Array, Executor, PerfCounter, PerfCounterSet, JITDaemon};
 pub use self::api::DeviceAttribute;
 pub use self::context::Context;
