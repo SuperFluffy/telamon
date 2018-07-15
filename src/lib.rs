@@ -34,11 +34,9 @@ extern crate rand;
 extern crate rpds;
 extern crate futures;
 extern crate tokio_timer;
-#[cfg(feature="cuda")]
-extern crate rustc_serialize;
 #[macro_use]
-extern crate serde_derive;
 extern crate serde;
+extern crate serde_json;
 #[macro_use]
 extern crate telamon_utils as utils;
 extern crate xdg;
